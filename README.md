@@ -3,5 +3,5 @@
 
 ## Files
 
-- **DAS_Main_Introduction_Get_Datasets.ipynb**: Contains the code for generating the datasets needed for **DAS_Own_Implementation.ipynb**.
+- **DAS_Main_Introduction_Get_Datasets.ipynb**: Contains the code for generating the datasets needed for **DAS_Own_Implementation.ipynb**. This is just the original code from the DAS implementation for pyvene, where I used pickle to save the datasets.
 - **DAS_Own_Implementation.ipynb**: A custom implementation of DAS from scratch. Only minimal code has been copied from the pyvene library.
