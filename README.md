@@ -3,5 +3,10 @@
 
 ## Files
 
-The newest code I use can be found in /Version_3.2__Early_Stopping_Neural_Net_Phi/DAS_V3.2.ipynb (this is also the only cleaned up code). However be aware that this code is implemented with early-stopping. Each folder has further results_*.json files. This include the results for a specific setting in the DAS paper (defined in name). Each such file includes the results for up to 10 different runs using different random seeds.
+The newest code I use can be found in DAS\_Experiment\_V5.2\_Cleanup. The Experiments are as following:
+
++ DAS\_Own\_Code\_V5\_Standard\_DAS.ipynb: Runs the standard full DAS run on MLPs (with different transformation functions)
++ DAS\_Own\_Code\_V5\_Training\_Progression.ipynb: Runs the DAS experiments at different MLP training stages (with different transformation functions)
++ DAS\_Own\_Code\_V5\_Hidden\_Size\_Progression.ipynb: Runs the DAS experiments with different hidden layer size RevNets on MLPs
++ DAS\_Own\_Code\_V5\_LLM\_Experiments.ipynb: Runs the standard full DAS run on LLMs (with different transformation functions)
 
