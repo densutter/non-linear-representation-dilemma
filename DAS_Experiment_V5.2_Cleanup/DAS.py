@@ -96,7 +96,7 @@ class Distributed_Alignment_Search:
             total_loss = 0
         
             #Make Batches
-            #random.shuffle(Sample_Indices)
+            random.shuffle(Sample_Indices)
             DAS_Train_Batches=self.chunk_list(Sample_Indices, batch_size)
             
             iterator=DAS_Train_Batches
