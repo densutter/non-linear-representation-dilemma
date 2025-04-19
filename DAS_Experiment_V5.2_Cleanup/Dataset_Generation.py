@@ -295,3 +295,172 @@ def Generate_LLM_Eval_Intervention_Data(filename,model_name,LLM_test_samples,Int
     DAS_Test_o=make_intervention_dataset_LLM(preprocessed_test,Intervention_test_size,tokenizer)
 
     return LLM_test_data,DAS_Train_o,DAS_Eval_o,DAS_Test_o
+
+
+
+
+
+###############################
+##                           ##
+##  AndOrAnd and AndOr Task  ##
+##                           ##
+###############################
+
+
+
+def get_Bool_Result(ABC):
+    a=ABC[0]
+    b=ABC[1]
+    c=ABC[2]
+    if (a and b) or (b and c):
+        return True
+    else:
+        return False
+
+def make_dataset_sample_model_AndOrAnd(embedding_size):
+    output=random.choice([True,False])
+    while True:
+        First_pair_same=random.choice([True,False])
+        if First_pair_same:
+            First_pair=create_same_pair(embedding_size)
+        else:
+            First_pair=create_diff_pair(embedding_size)
+            
+        Second_pair_same=random.choice([True,False])
+        if Second_pair_same:
+            Second_pair=create_same_pair(embedding_size)
+        else:
+            Second_pair=create_diff_pair(embedding_size)
+            
+        Third_pair_same=random.choice([True,False])
+        if Third_pair_same:
+            Third_pair=create_same_pair(embedding_size)
+        else:
+            Third_pair=create_diff_pair(embedding_size)
+        
+        modelinput=np.concatenate((First_pair, Second_pair,Third_pair), axis=None)
+        if get_Bool_Result([First_pair_same, Second_pair_same,Third_pair_same]):
+            label=1.0
+            if output:
+                break
+        else:
+            label=0.0
+            if not output:
+                break
+                
+    return modelinput,label,[First_pair,Second_pair,Third_pair],[First_pair_same,Second_pair_same,Third_pair_same]
+
+def make_model_dataset_AndOrAnd(size,embedding_size,device):
+    model_inputs=[]
+    labels=[]
+    for _ in range(size):
+        model_input,label,_,_=make_dataset_sample_model_AndOrAnd(embedding_size)
+        model_inputs.append(model_input)
+        labels.append(label)
+    return torch.tensor(model_inputs, dtype=torch.float32).to(device),torch.tensor(labels, dtype=torch.float32).to(device)
+
+
+
+
+def make_dataset_sample_intervention_AndOrAnd(embedding_size,variable1=False,variable2=False):
+    does_change=random.choice([True,False])
+    modelinput,label,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+    variable1_res=(Sim_Values[0] and Sim_Values[1])
+    variable2_res=(Sim_Values[1] and Sim_Values[2])
+    while (variable1_res and does_change and not variable1) or (variable2_res and does_change and not variable2):
+        modelinput,label,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+        variable1_res=(Sim_Values[0] and Sim_Values[1])
+        variable2_res=(Sim_Values[1] and Sim_Values[2])
+    base_res=get_Bool_Result(Sim_Values)
+    
+    if does_change:
+        label=1.0-label
+    
+    source_first_pair=[(np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size))]
+    source_second_pair=[(np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size))]
+    source1=np.concatenate(source_first_pair, axis=None)
+    source2=np.concatenate(source_second_pair, axis=None)
+    
+    while True:
+        variable1_res_new=variable1_res
+        variable2_res_new=variable2_res
+        if variable1:
+            source1,_,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+            variable1_res_new=(Sim_Values[0] and Sim_Values[1])
+        if variable2:
+            source2,_,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+            variable2_res_new=(Sim_Values[1] and Sim_Values[2])
+        if ((variable1_res_new or variable2_res_new)==base_res)and not does_change:
+            break
+        elif ((variable1_res_new or variable2_res_new)!=base_res)and does_change:
+            break
+    return modelinput,label,source1,source2
+
+def make_intervention_dataset_AndOrAnd(size,embedding_size):
+    intervention_data=[]
+    for _ in range(size):
+        variable1,variable2=random.choice([(True,False),(False,True),(True,True)])
+        base,label,source0,source1=make_dataset_sample_intervention_AndOrAnd(embedding_size,variable1=variable1,variable2=variable2)
+        intervention_data.append({})
+        intervention_data[-1]["base"]=torch.tensor(base, dtype=torch.float32)
+        intervention_data[-1]["label"]=torch.tensor(label, dtype=torch.float32)
+        intervention_data[-1]["sources"]=torch.tensor([source0,source1], dtype=torch.float32)
+        intervention_data[-1]["intervention"]=[variable1,variable2]
+        #print(intervention_data[-1])
+    return intervention_data
+
+
+
+def make_dataset_sample_intervention_AndOr(embedding_size,variable1=False,variable2=False):
+    does_change=random.choice([True,False])
+    modelinput,label,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+    variable1_res=Sim_Values[1]
+    variable2_res=(Sim_Values[0] or Sim_Values[2])
+    while ((not variable1_res) and does_change and not variable1) or ((not variable2_res) and does_change and not variable2):
+        modelinput,label,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+        variable1_res=Sim_Values[1]
+        variable2_res=(Sim_Values[0] or Sim_Values[2])
+    base_res=get_Bool_Result(Sim_Values)
+    if does_change:
+        label=1.0-label
+
+    source_first_pair=[(np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size))]
+    source_second_pair=[(np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size)),
+                       (np.zeros(embedding_size),np.zeros(embedding_size))]
+    source1=np.concatenate(source_first_pair, axis=None)
+    source2=np.concatenate(source_second_pair, axis=None)
+    
+    while True:
+        variable1_res_new=variable1_res
+        variable2_res_new=variable2_res
+        if variable1:
+            source1,_,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+            variable1_res_new=Sim_Values[1]
+        if variable2:
+            source2,_,_,Sim_Values=make_dataset_sample_model_AndOrAnd(embedding_size)
+            variable2_res_new=(Sim_Values[0] or Sim_Values[2])
+        if ((variable1_res_new and variable2_res_new)==base_res)and not does_change:
+            break
+        elif ((variable1_res_new and variable2_res_new)!=base_res)and does_change:
+            break
+    return modelinput,label,source1,source2
+
+def make_intervention_dataset_AndOr(size,embedding_size):
+    intervention_data=[]
+    for _ in range(size):
+        variable1,variable2=random.choice([(True,False),(False,True),(True,True)])
+        base,label,source0,source1=make_dataset_sample_intervention_AndOr(embedding_size,variable1=variable1,variable2=variable2)
+        intervention_data.append({})
+        intervention_data[-1]["base"]=torch.tensor(base, dtype=torch.float32)
+        intervention_data[-1]["label"]=torch.tensor(label, dtype=torch.float32)
+        intervention_data[-1]["sources"]=torch.tensor([source0,source1], dtype=torch.float32)
+        intervention_data[-1]["intervention"]=[variable1,variable2]
+        #print(intervention_data[-1])
+    return intervention_data

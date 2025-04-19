@@ -29,7 +29,7 @@ class RotateLayer(nn.Module):
 class Rotation(nn.Module):
     """Encapsulates the rotation transformation as a PyTorch module."""
 
-    def __init__(self, embed_dim=16):
+    def __init__(self, embed_dim):
         """
         Args:
             embed_dim (int): The embedding dimension (size of the transformation matrix).

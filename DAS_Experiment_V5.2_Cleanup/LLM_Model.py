@@ -32,6 +32,7 @@ def make_model(model_name,LLM_test_data,Trained=True,device="cpu"):
         model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
     else:
         config = AutoConfig.from_pretrained(model_name)
+        config.torch_dtype="float32"
         model = AutoModelForCausalLM.from_config(config).to(device)
     accuracy=test_model(model,LLM_test_data,device=device)
     return model,accuracy

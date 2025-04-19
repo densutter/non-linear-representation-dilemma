@@ -18,10 +18,10 @@ class MLPBlock(nn.Module):
         return x
 
 class MLPModel(nn.Module):
-    def __init__(self, input_size=16, hidden_size=16, num_blocks=3, dropout_prob=0.0):
+    def __init__(self, input_size=16, num_blocks=3, dropout_prob=0.0):
         super(MLPModel, self).__init__()
         self.dropout = nn.Dropout(p=dropout_prob)
-        self.h = nn.ModuleList([MLPBlock(hidden_size, hidden_size, dropout_prob) for _ in range(num_blocks)])
+        self.h = nn.ModuleList([MLPBlock(input_size, input_size, dropout_prob) for _ in range(num_blocks)])
 
     def forward(self, x):
         x = self.dropout(x)
@@ -30,10 +30,10 @@ class MLPModel(nn.Module):
         return x
 
 class MLPForClassification(nn.Module):
-    def __init__(self, input_size=16, hidden_size=16, num_classes=2, num_blocks=3, dropout_prob=0.0):
+    def __init__(self, input_size=16, num_classes=2, num_blocks=3, dropout_prob=0.0):
         super(MLPForClassification, self).__init__()
-        self.mlp = MLPModel(input_size, hidden_size, num_blocks, dropout_prob)
-        self.score = nn.Linear(hidden_size, num_classes)
+        self.mlp = MLPModel(input_size, num_blocks, dropout_prob)
+        self.score = nn.Linear(input_size, num_classes)
 
     def forward(self, x):
         x = self.mlp(x)
@@ -136,8 +136,8 @@ def test_model(model,X_test,y_test,batch_size = 1024,verbose=False):
     return eval_test_model(model,X_test,y_test,batch_size=batch_size,verbose=verbose)
 
 
-def make_model(X_train,y_train,X_eval,y_eval,X_test,y_test,epochs=3,device="cpu"):
-    model = MLPForClassification()
+def make_model(X_train,y_train,X_eval,y_eval,X_test,y_test,input_size,epochs=3,device="cpu"):
+    model = MLPForClassification(input_size=input_size)
     model.to(device)
     model=train_model_early_stopping(model,X_train,y_train,X_eval,y_eval,epochs=epochs)
     accuracy=test_model(model,X_test,y_test)

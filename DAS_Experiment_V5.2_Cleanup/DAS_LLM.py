@@ -45,7 +45,11 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
                 #add info needed for optimization... no sense in running inputs who are not used:
                 self.mode_info=["source",ac_source_pos]
                 ac_source=data[ac_dp]["sources"][ac_source_pos]
-                self.Model(**ac_source.to(self.Device))
+                if mode==1:
+                    self.Model(**ac_source.to(self.Device))
+                else:
+                    with torch.no_grad():
+                        self.Model(**ac_source.to(self.Device))
 
             #Intervention
             ac_base=data[ac_dp]["base"]
@@ -53,7 +57,11 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
             intervention_bools[0, self.Variable_Dimensions[0]] = True
             intervention_bools=intervention_bools.to(self.Device)
             self.mode_info=["intervene",intervention_bools]
-            outputs=self.Model(**ac_base.to(self.Device))["logits"][:,-1]
+            if mode==1:
+                outputs=self.Model(**ac_base.to(self.Device))["logits"][:,-1]
+            else:
+                with torch.no_grad():
+                    outputs=self.Model(**ac_base.to(self.Device))["logits"][:,-1]
             
             labels=data[ac_dp]["label"]
             true_logits.append(outputs[0][labels[0]])
@@ -68,7 +76,7 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
 
         else:
             #print("e:",torch.stack([true_logits, false_logits], dim=1))
-            total_correct += torch.sum(true_logits>false_logits)
+            total_correct += torch.sum(true_logits>false_logits).item()
             total_samples += true_logits.shape[0]
 
         

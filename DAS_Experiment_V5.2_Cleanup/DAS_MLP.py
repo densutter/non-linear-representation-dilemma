@@ -91,13 +91,21 @@ class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
             if len(used_source_indices)>0:
                 self.mode_info=["source",ac_source_pos,used_source_indices]
                 ac_source=data["sources"][ac_source_pos][ac_batch][used_source_indices]
-                self.Model(ac_source)
+                if mode==1:
+                    self.Model(ac_source)
+                else:
+                    with torch.no_grad():
+                        self.Model(ac_source)
 
         #Intervention
         ac_base=data["base"][ac_batch]
         intervention_bools=data["intervention"][ac_batch]
         self.mode_info=["intervene",intervention_bools]
-        outputs=self.Model(ac_base)
+        if mode==1:
+            outputs=self.Model(ac_base)
+        else:
+            with torch.no_grad():
+                outputs=self.Model(ac_base)
         labels=data["label"][ac_batch]
 
         predictions = torch.argmax(outputs, dim=1) 
