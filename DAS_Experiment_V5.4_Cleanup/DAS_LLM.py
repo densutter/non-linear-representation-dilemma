@@ -14,6 +14,7 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
         
     def register_intervention_hook(self, layer):
         def hook_fn(module, input, output):
+            twotuple=(len(output)==2)
             output=output[0].clone().detach()
             if self.mode_info[0] == "source":
                 # Extract column indices (list)
@@ -29,7 +30,10 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
                 result_tensor = self.Transformation_Class.phi(output[:,-1])
                 result_tensor = torch.where(self.mode_info[1], self.source_activations, result_tensor)
                 output_f[:,-1]=self.Transformation_Class.phi_inv(result_tensor)
-                return (output_f,)
+                if twotuple:
+                    return (output_f,None)
+                else:
+                    return (output_f,)
         
         return layer.register_forward_hook(hook_fn)
 
@@ -40,7 +44,7 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
         for ac_dp in ac_batch:
             #Prepare Source Activations
             self.source_activations = torch.zeros(1, self.Hidden_Layer_Size).to(self.Device)
-            
+            #print(data[ac_dp])
             for ac_source_pos in range(len(data[ac_dp]["sources"])):
                 #add info needed for optimization... no sense in running inputs who are not used:
                 self.mode_info=["source",ac_source_pos]

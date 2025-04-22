@@ -218,18 +218,22 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
         base=random.choice(data)
         source=random.choice(data)
         DAS_data[-1]["base"]=tokenizer(base[0], return_tensors="pt")
+        #print(base,source)
         if source[1]:
+            #print(base[2],base[3])
             DAS_data[-1]["label"]=torch.stack([
                 tokenizer(base[2], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(base[3], return_tensors="pt")["input_ids"][0][1]
             ])
         else:
+            #print(base[3],base[2])
             DAS_data[-1]["label"]=torch.stack([
                 tokenizer(base[3], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(base[2], return_tensors="pt")["input_ids"][0][1]
             ])
         DAS_data[-1]["sources"]=[tokenizer(source[0], return_tensors="pt")]
         DAS_data[-1]["intervention"]=[True]
+        DAS_data
     return DAS_data
 
 
@@ -275,12 +279,15 @@ def Generate_LLM_Eval_Intervention_Data(filename,model_name,LLM_test_samples,Int
     LLM_test_data=[[],[]]
     for dp in tqdm(random.sample(preprocessed_test,LLM_test_samples)):
         LLM_test_data[0].append(tokenizer(dp[0], return_tensors="pt"))
+        #print(dp)
         if dp[1]:
+            #print(dp[2],dp[3])
             LLM_test_data[1].append(torch.stack([
                 tokenizer(dp[2], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(dp[3], return_tensors="pt")["input_ids"][0][1]
             ]))
         else:
+            #print(dp[3],dp[2])
             LLM_test_data[1].append(torch.stack([
                 tokenizer(dp[3], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(dp[2], return_tensors="pt")["input_ids"][0][1]
@@ -407,7 +414,7 @@ def make_intervention_dataset_AndOrAnd(size,embedding_size):
         base,label,source0,source1=make_dataset_sample_intervention_AndOrAnd(embedding_size,variable1=variable1,variable2=variable2)
         intervention_data.append({})
         intervention_data[-1]["base"]=torch.tensor(base, dtype=torch.float32)
-        intervention_data[-1]["label"]=torch.tensor(label, dtype=torch.float32)
+        intervention_data[-mecha_ioi_200k1]["label"]=torch.tensor(label, dtype=torch.float32)
         intervention_data[-1]["sources"]=torch.tensor([source0,source1], dtype=torch.float32)
         intervention_data[-1]["intervention"]=[variable1,variable2]
         #print(intervention_data[-1])

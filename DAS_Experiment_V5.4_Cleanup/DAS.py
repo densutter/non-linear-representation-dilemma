@@ -109,6 +109,7 @@ class Distributed_Alignment_Search:
                     print("Eval:")
                 iterator=tqdm(iterator)
             for ac_batch in iterator:
+                #print(ac_batch)
 
                 if mode==1: 
                     self.Transformation_Class.optimizer.zero_grad()

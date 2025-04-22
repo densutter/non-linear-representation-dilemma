@@ -1,6 +1,9 @@
 from transformers import AutoModelForCausalLM, AutoConfig
 import torch
 import torch.nn.functional as F
+import torch.nn.init as init
+import torch.nn as nn
+import math
 from tqdm import tqdm
 
 
@@ -27,13 +30,23 @@ def test_model(model,LLM_test_data,batch_size = 32,device="cpu"):
 
 
 
-def make_model(model_name,LLM_test_data,Trained=True,device="cpu"):
-    if Trained:
+def make_model(model_name,LLM_test_data,Trained=True,device="cpu"): #Trained=0:pretrained, 1:fully randomized, 2:only randomize llm head
+    if Trained==0:
         model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
-    else:
+    elif Trained==1:
         config = AutoConfig.from_pretrained(model_name)
         config.torch_dtype="float32"
         model = AutoModelForCausalLM.from_config(config).to(device)
+    elif Trained==2:
+        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+        model.lm_head.weight=nn.Parameter(model.lm_head.weight.clone())
+        init.kaiming_uniform_(model.lm_head.weight, a=math.sqrt(5)) 
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+    else:
+        Exception("Unknown initialization")
     accuracy=test_model(model,LLM_test_data,device=device)
     return model,accuracy
 
