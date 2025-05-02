@@ -37,12 +37,27 @@ def make_model(model_name,LLM_test_data,Trained=True,device="cpu"): #Trained=0:p
         config = AutoConfig.from_pretrained(model_name)
         config.torch_dtype="float32"
         model = AutoModelForCausalLM.from_config(config).to(device)
-    elif Trained==2:
+    elif Trained==2: #Random Unembedding
         model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
         model.lm_head.weight=nn.Parameter(model.lm_head.weight.clone())
         init.kaiming_uniform_(model.lm_head.weight, a=math.sqrt(5)) 
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+    elif Trained==3: #Random Embedding
+        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+        model.model.embed_tokens.weight=nn.Parameter(model.model.embed_tokens.weight.clone())
+        init.kaiming_uniform_(model.model.embed_tokens.weight, a=math.sqrt(5)) 
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+    elif Trained==4: #Random linked embedding and unembedding
+        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+        init.kaiming_uniform_(model.model.embed_tokens.weight, a=math.sqrt(5)) 
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
     else:
