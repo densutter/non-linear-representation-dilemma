@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import pandas as pd
 from tqdm import tqdm
-
+from transformers import AutoTokenizer
 
 
 ################################
@@ -217,7 +217,8 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
         DAS_data.append({})
         base=random.choice(data)
         source=random.choice(data)
-        DAS_data[-1]["base"]=tokenizer(base[0])
+        DAS_data[-1]["base"]=tokenizer(base[0], return_tensors="pt")
+        #print(base,source)
         if source[1]:
             #print(base[2],base[3])
             DAS_data[-1]["label"]=torch.stack([
@@ -230,18 +231,27 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
                 tokenizer(base[3], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(base[2], return_tensors="pt")["input_ids"][0][1]
             ])
-        DAS_data[-1]["sources"]=[tokenizer(source[0])]
+        DAS_data[-1]["sources"]=[tokenizer(source[0], return_tensors="pt")]
         DAS_data[-1]["intervention"]=[True]
         DAS_data
     return DAS_data
 
 
-def Preprocess_IOI_Data(data):
-    
+
+def verify(label_a, label_b, tokenizer):
+    tokens_a = tokenizer.tokenize(" "+label_a)
+    tokens_b = tokenizer.tokenize(" "+label_b)
+    tokens_a_no_space = tokenizer.tokenize(label_a)
+    if "".join(tokens_a_no_space) == "".join(tokens_a[1:]):
+        return False, tokens_a[0] != tokens_b[0]
+    else:
+        return True, tokens_a[0] != tokens_b[0]
+
+def Preprocess_IOI_Data(data, tokenizer):
     preprocess=[]
     for ac_data in tqdm(data["ioi_sentences"]):
         label=ac_data.split(" ")[-1]
-        cutoff_text=ac_data[:-1*(len(label))]
+        cutoff_text=ac_data[:-1*(len(label))-1]
         if "." in ac_data:
             prev_name=ac_data.split(".")[1].split(" ")[1]
         elif "," in ac_data:
@@ -256,13 +266,25 @@ def Preprocess_IOI_Data(data):
             hidden_var=False
             label_true=prev_name
             label_false=label
+
+        label_space, label_diff = verify(label_true, label_false, tokenizer)
+        if not label_diff:
+            # Both labels are the same, skip
+            continue
+        if label_space:
+            # The tokenizer requires a space in front of the label
+            label_true = " " + label_true
+            label_false = " " + label_false
+        else:
+            cutoff_text = cutoff_text + " "
         preprocess.append([cutoff_text,hidden_var,label_true,label_false])
     return preprocess
 
-def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
+def Generate_LLM_Eval_Intervention_Data(filename,model_name,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
     
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     data=pd.read_parquet(filename, engine='pyarrow')
-    preprocess=Preprocess_IOI_Data(data)
+    preprocess=Preprocess_IOI_Data(data, tokenizer)
     
     random.shuffle(preprocess)
     
