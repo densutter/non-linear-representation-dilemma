@@ -4,6 +4,7 @@ import copy
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import wandb
 
 class phi_class:
     def __init__(self, phi,phi_inv,criterion,optimizer,scheduler):
@@ -59,7 +60,8 @@ class Distributed_Alignment_Search:
         pass
 
     def train_test(self,
-                   batch_size,epochs=1,
+                   batch_size,
+                   epochs=1,
                    mode=1,
                    early_stopping_threshold=3,
                    early_stopping_improve_threshold=0.001,
@@ -99,6 +101,7 @@ class Distributed_Alignment_Search:
         best_accuracy_corr=-1
         steps_without_improvement=0
         Best_Phi=None
+        step = -1
         for epoch in range(epochs):
             total_correct = 0
             total_samples = 0
@@ -118,6 +121,7 @@ class Distributed_Alignment_Search:
                     print("Eval:")
                 iterator=tqdm(iterator)
             for ac_batch in iterator:
+                step += 1
                 #print(ac_batch)
 
                 if mode==1: 
@@ -125,11 +129,23 @@ class Distributed_Alignment_Search:
                 
                 
                 loss,total_correct,total_samples = self.process_Batch(mode,data,ac_batch,total_correct,total_samples)
-                
+                # Update the progress bar with loss and accuracy information if in verbose mode
+                if verbose and hasattr(iterator, 'set_description'):
+                    accuracy = total_correct / total_samples if total_samples > 0 else 0
+                    if mode == 1:
+                        iterator.set_description(f"Loss: {loss.item():.4f}, Accuracy: {accuracy:.4f}")
+                    else:
+                        iterator.set_description(f"Accuracy: {accuracy:.4f}")
                 if mode==1:
                     loss.backward()
                     self.Transformation_Class.optimizer.step()
                     total_loss += loss.item()
+
+                wandb.log({
+                    "train/loss": loss.item(),
+                    "train/accuracy": accuracy,
+                    "lr": self.Transformation_Class.scheduler.get_last_lr()[-1]
+                }, step=step)
 
             #Early stopping mechanism
             if mode==1:
@@ -146,13 +162,23 @@ class Distributed_Alignment_Search:
                     steps_without_improvement+=1
                     
                 total_loss=total_loss / len(DAS_Train_Batches)
+                current_lr = self.Transformation_Class.scheduler.get_last_lr()[-1]
                 self.Transformation_Class.scheduler.step(total_loss)
                 print(f"Epoch {epoch+1}, Loss: {total_loss}",
                       "steps without improvement:",steps_without_improvement,
                       "eval accuracy:",eval_acc,
                       "best eval accuracy:",best_accuracy_corr,
-                      "learning rate:",self.Transformation_Class.scheduler.get_last_lr()[-1], flush=True)
+                      "learning rate:", current_lr, flush=True)
                 
+                # Log metrics to wandb
+                wandb.log({
+                    "epoch": epoch + 1,
+                    "val/accuracy": eval_acc,
+                    "val/best_accuracy": best_accuracy_corr,
+                    "val/learning_rate": current_lr,
+                    "val/steps_without_improvement": steps_without_improvement
+                }, step=step)
+
                 if steps_without_improvement>=early_stopping_threshold or epoch==epochs-1:
                     Best_Phi.to(self.Device)
                     Best_Phi_inverse=Best_Phi.inverse
@@ -167,6 +193,8 @@ class Distributed_Alignment_Search:
             for param in self.Transformation_Class.phi.parameters():
                 param.requires_grad = True  # This unfreezes the weights
             accuracy = total_correct / total_samples
+            if mode == 2:
+                wandb.log({"final_test_accuracy": accuracy})
             if TrainModel:
                 self.Model.train()
                 for param in self.Model.parameters():

@@ -24,7 +24,8 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
                 transformed_values = self.Transformation_Class.phi(output[torch.arange(output.size(0)), [self.mode_info[3][i] for i in self.mode_info[2]]])[:, col_indices]
                 # Assign these values to the corresponding positions in source_activations
                 self.source_activations[torch.tensor(self.mode_info[2]).unsqueeze(1), torch.tensor(col_indices).unsqueeze(0)] = transformed_values
-                
+                raise StopIteration
+            
             elif self.mode_info[0] == "intervene":
                 output_f=output.clone()#.detach().requires_grad_()
                 result_tensor = self.Transformation_Class.phi(output[torch.arange(output.size(0)), self.mode_info[2]])
@@ -77,11 +78,14 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
                 source_text[aS]=self.tokenizer.pad(source_text[aS], padding=True, return_tensors="pt").to(self.Device)
             
                 self.mode_info=["source",aS,source_used[aS],source_output_pos[aS]]
-                if mode==1:
-                    self.Model(**source_text[aS])
-                else:
-                    with torch.no_grad():
+                try:
+                    if mode==1:
                         self.Model(**source_text[aS])
+                    else:
+                        with torch.no_grad():
+                            self.Model(**source_text[aS])
+                except StopIteration:
+                    pass
     
         self.mode_info=["intervene",intervention_bools,base_output_pos]
         if mode==1:
@@ -93,16 +97,9 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
         true_logits=outputs[torch.arange(outputs.size(0)), base_output_pos, idx_true_logit]
         false_logits=outputs[torch.arange(outputs.size(0)), base_output_pos, idx_false_logit]
         loss=0
-        if mode==1:
-            #print("t:",torch.stack([true_logits, false_logits], dim=1))
-            loss = self.Transformation_Class.criterion(false_logits, true_logits)
-
-        else:
-            #print("e:",torch.stack([true_logits, false_logits], dim=1))
-            total_correct += torch.sum(true_logits>false_logits).item()
-            total_samples += true_logits.shape[0]
-
-        
+        loss = self.Transformation_Class.criterion(false_logits, true_logits)
+        total_correct += torch.sum(true_logits>false_logits).item()
+        total_samples += true_logits.shape[0]
         return loss,total_correct,total_samples
 
 
