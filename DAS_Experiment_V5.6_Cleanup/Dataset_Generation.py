@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import pandas as pd
 from tqdm import tqdm
-from transformers import AutoTokenizer
+
 
 
 ################################
@@ -217,8 +217,7 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
         DAS_data.append({})
         base=random.choice(data)
         source=random.choice(data)
-        DAS_data[-1]["base"]=tokenizer(base[0], return_tensors="pt")
-        #print(base,source)
+        DAS_data[-1]["base"]=tokenizer(base[0])
         if source[1]:
             #print(base[2],base[3])
             DAS_data[-1]["label"]=torch.stack([
@@ -231,7 +230,7 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
                 tokenizer(base[3], return_tensors="pt")["input_ids"][0][1],
                 tokenizer(base[2], return_tensors="pt")["input_ids"][0][1]
             ])
-        DAS_data[-1]["sources"]=[tokenizer(source[0], return_tensors="pt")]
+        DAS_data[-1]["sources"]=[tokenizer(source[0])]
         DAS_data[-1]["intervention"]=[True]
         DAS_data
     return DAS_data
@@ -280,11 +279,10 @@ def Preprocess_IOI_Data(data, tokenizer):
         preprocess.append([cutoff_text,hidden_var,label_true,label_false])
     return preprocess
 
-def Generate_LLM_Eval_Intervention_Data(filename,model_name,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
+def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
     
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
     data=pd.read_parquet(filename, engine='pyarrow')
-    preprocess=Preprocess_IOI_Data(data, tokenizer)
+    preprocess=Preprocess_IOI_Data(data,tokenizer)
     
     random.shuffle(preprocess)
     
