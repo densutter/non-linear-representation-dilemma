@@ -30,15 +30,15 @@ def test_model(model,LLM_test_data,batch_size = 32,device="cpu"):
 
 
 
-def make_model(model_name,LLM_test_data,Trained=True,device="cpu"): #Trained=0:pretrained, 1:fully randomized, 2:only randomize llm head
+def make_model(model_name,LLM_test_data,Trained=True,device="cpu", dtype="float32"): #Trained=0:pretrained, 1:fully randomized, 2:only randomize llm head
     if Trained==0:
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(device)
     elif Trained==1:
         config = AutoConfig.from_pretrained(model_name)
-        config.torch_dtype="float32"
+        config.torch_dtype=dtype
         model = AutoModelForCausalLM.from_config(config).to(device)
     elif Trained==2: #Random Unembedding
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(device)
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
         model.lm_head.weight=nn.Parameter(model.lm_head.weight.clone())
@@ -46,7 +46,7 @@ def make_model(model_name,LLM_test_data,Trained=True,device="cpu"): #Trained=0:p
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
     elif Trained==3: #Random Embedding
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(device)
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
         model.model.embed_tokens.weight=nn.Parameter(model.model.embed_tokens.weight.clone())
@@ -54,10 +54,22 @@ def make_model(model_name,LLM_test_data,Trained=True,device="cpu"): #Trained=0:p
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
     elif Trained==4: #Random linked embedding and unembedding
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(device)
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
         init.kaiming_uniform_(model.model.embed_tokens.weight, a=math.sqrt(5)) 
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+    elif Trained==5: #Random Unembedding and Embedding with same norm as original
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype).to(device)
+        #print(model.model.embed_tokens.weight)
+        #print(model.lm_head.weight)
+        norm=torch.norm(model.model.embed_tokens.weight)
+        init.kaiming_uniform_(model.model.embed_tokens.weight, a=math.sqrt(5)) 
+        model.model.embed_tokens.weight=nn.Parameter(model.model.embed_tokens.weight/torch.norm(model.model.embed_tokens.weight)*norm)
+        norm=torch.norm(model.lm_head.weight)
+        init.kaiming_uniform_(model.lm_head.weight, a=math.sqrt(5)) 
+        model.lm_head.weight=nn.Parameter(model.lm_head.weight/torch.norm(model.lm_head.weight)*norm)
         #print(model.model.embed_tokens.weight)
         #print(model.lm_head.weight)
     else:

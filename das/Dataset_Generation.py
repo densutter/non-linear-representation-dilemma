@@ -248,6 +248,7 @@ def verify(label_a, label_b, tokenizer):
 
 def Preprocess_IOI_Data(data, tokenizer):
     preprocess=[]
+
     for ac_data in tqdm(data["ioi_sentences"]):
         label=ac_data.split(" ")[-1]
         cutoff_text=ac_data[:-1*(len(label))-1]
@@ -281,7 +282,7 @@ def Preprocess_IOI_Data(data, tokenizer):
 
 def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
     
-    data=pd.read_parquet(filename, engine='pyarrow')
+    data=pd.read_parquet(filename, engine='pyarrow').iloc[:Intervention_train_size*2]
     preprocess=Preprocess_IOI_Data(data,tokenizer)
     
     random.shuffle(preprocess)

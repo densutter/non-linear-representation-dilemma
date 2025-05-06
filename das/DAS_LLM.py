@@ -43,7 +43,7 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
     def process_Batch(self,mode,data,ac_batch,total_correct,total_samples): 
         true_logits=[]
         false_logits=[]
-        self.source_activations = torch.zeros(len(ac_batch), self.Hidden_Layer_Size).to(self.Device)
+        self.source_activations = torch.zeros(len(ac_batch), self.Hidden_Layer_Size).to(self.Device).to(self.Model.dtype)
         base_text=[]
         base_output_pos=[]
         source_text=[]
