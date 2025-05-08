@@ -221,14 +221,14 @@ def make_intervention_dataset_LLM(data,size,tokenizer):
         if source[1]:
             #print(base[2],base[3])
             DAS_data[-1]["label"]=torch.stack([
-                tokenizer(base[2], return_tensors="pt")["input_ids"][0][1],
-                tokenizer(base[3], return_tensors="pt")["input_ids"][0][1]
+                tokenizer(base[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(base[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
             ])
         else:
             #print(base[3],base[2])
             DAS_data[-1]["label"]=torch.stack([
-                tokenizer(base[3], return_tensors="pt")["input_ids"][0][1],
-                tokenizer(base[2], return_tensors="pt")["input_ids"][0][1]
+                tokenizer(base[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(base[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
             ])
         DAS_data[-1]["sources"]=[tokenizer(source[0])]
         DAS_data[-1]["intervention"]=[True]
@@ -248,6 +248,7 @@ def verify(label_a, label_b, tokenizer):
 
 def Preprocess_IOI_Data(data, tokenizer):
     preprocess=[]
+
     for ac_data in tqdm(data["ioi_sentences"]):
         label=ac_data.split(" ")[-1]
         cutoff_text=ac_data[:-1*(len(label))-1]
@@ -280,8 +281,10 @@ def Preprocess_IOI_Data(data, tokenizer):
     return preprocess
 
 def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size):
-    
     data=pd.read_parquet(filename, engine='pyarrow')
+    if len(data) > 2*Intervention_train_size:
+        print(f"Truncating data from {len(data)} to {2*Intervention_train_size}")
+        data = data.iloc[:2*Intervention_train_size]
     preprocess=Preprocess_IOI_Data(data,tokenizer)
     
     random.shuffle(preprocess)
@@ -301,14 +304,16 @@ def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Inte
         if dp[1]:
             #print(dp[2],dp[3])
             LLM_test_data[1].append(torch.stack([
-                tokenizer(dp[2], return_tensors="pt")["input_ids"][0][1],
-                tokenizer(dp[3], return_tensors="pt")["input_ids"][0][1]
+                tokenizer(dp[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(dp[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
             ]))
         else:
-            #print(dp[3],dp[2])
+            # print(dp[3],dp[2])
+            # print(tokenizer(dp[3], return_tensors="pt")["input_ids"])
+            # print(tokenizer(dp[2], return_tensors="pt")["input_ids"])
             LLM_test_data[1].append(torch.stack([
-                tokenizer(dp[3], return_tensors="pt")["input_ids"][0][1],
-                tokenizer(dp[2], return_tensors="pt")["input_ids"][0][1]
+                tokenizer(dp[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(dp[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
             ]))
     
     

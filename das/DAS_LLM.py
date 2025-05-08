@@ -3,9 +3,10 @@ import random
 import copy
 import torch.nn as nn
 import torch.optim as optim
+from torch.nn import functional as F
 
-from LLM_Model import LLM_Criterion
-from DAS import Distributed_Alignment_Search
+from .LLM_Model import LLM_Criterion_targetCE
+from .DAS import Distributed_Alignment_Search
 
 class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
 
@@ -43,7 +44,7 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
     def process_Batch(self,mode,data,ac_batch,total_correct,total_samples): 
         true_logits=[]
         false_logits=[]
-        self.source_activations = torch.zeros(len(ac_batch), self.Hidden_Layer_Size).to(self.Device)
+        self.source_activations = torch.zeros(len(ac_batch), self.Hidden_Layer_Size).to(self.Device).to(self.Model.dtype)
         base_text=[]
         base_output_pos=[]
         source_text=[]
@@ -97,12 +98,19 @@ class Distributed_Alignment_Search_LLM(Distributed_Alignment_Search):
         true_logits=outputs[torch.arange(outputs.size(0)), base_output_pos, idx_true_logit]
         false_logits=outputs[torch.arange(outputs.size(0)), base_output_pos, idx_false_logit]
         loss=0
-        loss = self.Transformation_Class.criterion(false_logits, true_logits)
+        loss = self.Transformation_Class.criterion(false_logits, true_logits, outputs[torch.arange(outputs.size(0)), base_output_pos], torch.tensor(idx_true_logit, device=self.Device))
+        logit_diff=(false_logits-true_logits).mean()
+        CE_loss=F.cross_entropy(outputs[torch.arange(outputs.size(0)), base_output_pos], torch.tensor(idx_true_logit, device=self.Device))
+        wierdCE_loss = LLM_Criterion_targetCE(false_logits, true_logits)
+        # shape [batch, 2]
         total_correct += torch.sum(true_logits>false_logits).item()
         total_samples += true_logits.shape[0]
-        return loss,total_correct,total_samples
-
-
+        stats = {
+            "logit_diff": logit_diff.item(),
+            "CE": CE_loss.item(),
+            "wierdCE": wierdCE_loss.item(),
+        }
+        return loss,total_correct,total_samples,stats
     
     def chunk_list(self, input_list, batch_size):
         return [input_list[i:i + batch_size] for i in range(0, len(input_list), batch_size)]

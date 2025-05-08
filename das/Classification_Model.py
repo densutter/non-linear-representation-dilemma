@@ -4,8 +4,8 @@ import torch
 import torch.optim as optim
 import copy
 
-from DAS import phi_class
-from DAS_MLP import Distributed_Alignment_Search_MLP
+from .DAS import phi_class
+from .DAS_MLP import Distributed_Alignment_Search_MLP
 
 class MLPBlock(nn.Module):
     def __init__(self, in_features=16, out_features=16, dropout_prob=0.0):

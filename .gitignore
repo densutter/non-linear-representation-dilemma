@@ -1,0 +1,6 @@
+results/*
+datasets/*
+playground.ipynb
+*.pyc
+**/wandb/**
+*.log

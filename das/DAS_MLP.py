@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 
-from DAS import Distributed_Alignment_Search
+from .lDAS import Distributed_Alignment_Search
 
 
 class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
