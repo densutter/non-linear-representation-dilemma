@@ -93,7 +93,7 @@ class Distributed_Alignment_Search:
         for ac_batch in iterator:
             # process_Batch expects mode, data, ac_batch, total_correct, total_samples
             # It returns loss (ignored here), updated total_correct, updated total_samples
-            loss, total_correct, total_samples = self.process_Batch(mode=3, data=data, ac_batch=ac_batch, 
+            loss, total_correct, total_samples, stats = self.process_Batch(mode=3, data=data, ac_batch=ac_batch, 
                                                                  total_correct=total_correct, total_samples=total_samples)
             total_loss += loss.item()
             if verbose and hasattr(iterator, 'set_description'):
@@ -120,7 +120,8 @@ class Distributed_Alignment_Search:
                    early_stopping_improve_threshold=0.001,
                    TrainModel=False,
                    verbose=False,
-                   val_every_n_steps=None): # 1=train, 2=test, 3=eval
+                   val_every_n_steps=None,
+                   lr_warmup_steps=0): # 1=train, 2=test, 3=eval
 
         # --- Initial State Setup based on mode and TrainModel ---
         initial_model_train_state = self.Model.training # Store original state to restore at the end
@@ -161,12 +162,17 @@ class Distributed_Alignment_Search:
         # mode == 3 is handled above
 
         # --- Training Loop Variables ---
-        best_accuracy = -1
-        best_accuracy_corr = -1
+        best_loss = float('inf')
+        best_loss_corr = float('inf')
         steps_without_improvement = 0
         Best_Phi = None
         step = 0
         early_stop_triggered = False
+
+        # Store the target learning rate for warmup
+        target_lr = 0
+        if mode == 1 and self.Transformation_Class.optimizer is not None:
+            target_lr = self.Transformation_Class.optimizer.param_groups[0]['lr']
 
         # --- Epoch Loop ---
         for epoch in range(epochs):
@@ -190,7 +196,7 @@ class Distributed_Alignment_Search:
                 if mode == 1: # Training Step
                     self.Transformation_Class.optimizer.zero_grad()
                     
-                    loss, batch_correct, batch_samples = self.process_Batch(mode, data, ac_batch, 0, 0) # Get batch-specific counts
+                    loss, batch_correct, batch_samples, stats = self.process_Batch(mode, data, ac_batch, 0, 0) # Get batch-specific counts
                     total_correct += batch_correct # Accumulate for epoch average if needed later
                     total_samples += batch_samples
                     
@@ -198,27 +204,43 @@ class Distributed_Alignment_Search:
                     if verbose and hasattr(iterator, 'set_description'):
                          iterator.set_description(f"Loss: {loss.item():.4f}, Batch Acc: {accuracy:.4f}")
 
+                    # --- Learning Rate Warmup ---
+                    current_step_lr = 0
+                    if lr_warmup_steps > 0 and step <= lr_warmup_steps:
+                        # Calculate linearly warmed-up LR
+                        current_step_lr = target_lr * (step / lr_warmup_steps)
+                        for param_group in self.Transformation_Class.optimizer.param_groups:
+                            param_group['lr'] = current_step_lr
+                    else:
+                        # After warmup, LR is managed by the scheduler (based on epoch-level metrics)
+                        # or remains constant if no scheduler step occurs.
+                        # For logging, get the current LR from the optimizer.
+                        current_step_lr = self.Transformation_Class.optimizer.param_groups[0]['lr']
+
                     loss.backward()
                     self.Transformation_Class.optimizer.step()
                     total_loss += loss.item()
 
-                    wandb.log({
+                    log_dict = {    
                         "train/loss": loss.item(),
                         "train/accuracy": accuracy, # Log batch accuracy
-                        "lr": self.Transformation_Class.scheduler.get_last_lr()[-1],
+                        "lr": current_step_lr, # Log the actual LR used for this step
                         "epoch": epoch,
-                    }, step=step)
+                    }
+                    for key, value in stats.items():
+                        log_dict[f"train/{key}"] = value
+                    wandb.log(log_dict, step=step)
 
                     # --- Intra-epoch Validation ---
                     if val_every_n_steps is not None and step % val_every_n_steps == 0:
                         eval_acc, eval_loss = self._run_validation(batch_size, verbose=False) # Use the new method
                         
                         # --- Early Stopping Check (Intra-Epoch) ---
-                        if eval_acc > best_accuracy_corr:
-                            best_accuracy_corr = eval_acc
+                        if eval_loss < best_loss_corr:
+                            best_loss_corr = eval_loss
                             Best_Phi = copy.deepcopy(self.Transformation_Class.phi)
-                            if eval_acc - early_stopping_improve_threshold > best_accuracy:
-                                best_accuracy = eval_acc
+                            if eval_loss + early_stopping_improve_threshold < best_loss:
+                                best_loss = eval_loss
                                 steps_without_improvement = 0
                             else:
                                 steps_without_improvement += 1
@@ -227,13 +249,13 @@ class Distributed_Alignment_Search:
                         
                         wandb.log({
                             "val/accuracy": eval_acc,
-                            "val/best_accuracy": best_accuracy_corr,
+                            "val/best_loss": best_loss_corr,
                             "val/loss": eval_loss,
                             "val/steps_without_improvement": steps_without_improvement
                         }, step=step) 
 
                         if verbose:
-                             print(f"\nStep {step} Validation: Acc={eval_acc:.4f}, BestAcc={best_accuracy_corr:.4f}, StepsWithoutImprovement={steps_without_improvement}")
+                            print(f"\nStep {step} Validation: Loss={eval_loss:.4f}, Acc={eval_acc:.4f}, BestLoss={best_loss_corr:.4f}, StepsWithoutImprovement={steps_without_improvement}")
 
                         if steps_without_improvement >= early_stopping_threshold:
                             print(f"Early stopping triggered at step {step}.")
@@ -241,7 +263,7 @@ class Distributed_Alignment_Search:
                             break # Exit batch loop
 
                 elif mode == 2: # Testing Step
-                     _, batch_correct, batch_samples = self.process_Batch(mode, data, ac_batch, 0, 0)
+                     _, batch_correct, batch_samples, _ = self.process_Batch(mode, data, ac_batch, 0, 0)
                      total_correct += batch_correct
                      total_samples += batch_samples
                      if verbose and hasattr(iterator, 'set_description'):
@@ -255,10 +277,17 @@ class Distributed_Alignment_Search:
             # --- End of Epoch Processing (Only for Training Mode) ---
             if mode == 1:
                 avg_epoch_loss = total_loss / len(Data_Batches) if len(Data_Batches) > 0 else 0
-                current_lr = self.Transformation_Class.scheduler.get_last_lr()[-1]
-                self.Transformation_Class.scheduler.step(avg_epoch_loss) # Step LR based on average epoch training loss
+                
+                # Note: Scheduler steps based on epoch loss.
+                # If warmup is still active for part of the epoch, this is implicitly handled.
+                # The LR for the *next* epoch will be determined by the scheduler,
+                # unless overridden by warmup at the start of that next epoch.
+                self.Transformation_Class.scheduler.step(avg_epoch_loss)
+                # Get the LR that the scheduler decided on (or was before, if no change)
+                # This will be the base LR for the next epoch, subject to warmup.
+                effective_lr_after_scheduler_step = self.Transformation_Class.optimizer.param_groups[0]['lr']
 
-                final_eval_acc_report = best_accuracy_corr # Default report value
+                final_eval_loss_report = best_loss_corr # Default report value
 
                 # --- End-of-Epoch Validation ---
                 if val_every_n_steps is None: 
@@ -266,11 +295,11 @@ class Distributed_Alignment_Search:
                     final_eval_acc_report = eval_acc # Report the actual end-of-epoch accuracy
 
                     # --- Early Stopping Check (End-of-Epoch) ---
-                    if eval_acc > best_accuracy_corr:
-                        best_accuracy_corr = eval_acc
+                    if eval_loss < best_loss_corr:
+                        best_loss_corr = eval_loss
                         Best_Phi = copy.deepcopy(self.Transformation_Class.phi)
-                        if eval_acc - early_stopping_improve_threshold > best_accuracy:
-                            best_accuracy = eval_acc
+                        if eval_loss + early_stopping_improve_threshold < best_loss:
+                            best_loss = eval_loss
                             steps_without_improvement = 0
                         else:
                             steps_without_improvement += 1
@@ -279,9 +308,10 @@ class Distributed_Alignment_Search:
 
                     wandb.log({
                         "epoch": epoch + 1, # Log against epoch number
+                        "val/loss": eval_loss,
+                        "val/best_loss": best_loss_corr,
                         "val/accuracy": eval_acc,
-                        "val/best_accuracy": best_accuracy_corr,
-                        "val/learning_rate": current_lr, 
+                        "val/learning_rate": effective_lr_after_scheduler_step, # Log LR after scheduler step
                         "val/steps_without_improvement": steps_without_improvement
                     }, step=step) # Log against the global step count at epoch end
 
@@ -291,8 +321,8 @@ class Distributed_Alignment_Search:
                 
                 print(f"Epoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}, ",
                       f"Steps w/o Improvement: {steps_without_improvement}, ",
-                      f"Eval Acc (End of Epoch): {final_eval_acc_report:.4f}" if val_every_n_steps is None else f"Best Eval Acc So Far: {best_accuracy_corr:.4f}",
-                      f", LR: {current_lr}", flush=True)
+                      f"Eval Loss (End of Epoch): {final_eval_loss_report:.4f}" if val_every_n_steps is None else f"Best Eval Loss So Far: {best_loss_corr:.4f}",
+                      f", LR for next epoch (base): {effective_lr_after_scheduler_step}", flush=True)
 
                 if early_stop_triggered:
                     break # Exit epoch loop
@@ -300,7 +330,7 @@ class Distributed_Alignment_Search:
         # --- After Epoch Loop ---
         if mode == 1: # Training finished
             if Best_Phi is not None:
-                print(f"Loading best phi with accuracy: {best_accuracy_corr:.4f}")
+                print(f"Loading best phi with loss: {best_loss_corr:.4f}")
                 Best_Phi.to(self.Device)
                 Best_Phi_inverse = Best_Phi.inverse 
                 final_lr = self.Transformation_Class.scheduler.get_last_lr()[-1] if hasattr(self.Transformation_Class.scheduler, 'get_last_lr') else self.Transformation_Class.optimizer.param_groups[0]['lr']
@@ -322,7 +352,7 @@ class Distributed_Alignment_Search:
             for param in self.Model.parameters(): 
                  param.requires_grad = model_final_grad_state
 
-            return best_accuracy_corr # Return best validation accuracy
+            return best_loss_corr # Return best validation loss
 
         elif mode == 2: # Testing finished
             # Ensure models are in eval mode
@@ -332,7 +362,7 @@ class Distributed_Alignment_Search:
             for param in self.Transformation_Class.phi.parameters(): param.requires_grad = False
 
             accuracy = total_correct / total_samples if total_samples > 0 else 0
-            wandb.log({"final_test_accuracy": accuracy}, step=step) 
+            wandb.log({"test/accuracy": accuracy}) 
             return accuracy
                 
 
