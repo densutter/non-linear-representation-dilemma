@@ -102,7 +102,7 @@ def main(args):
         transformation_config["depth"] = args.revnet_depth
     
     # Define dataset details
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name, revision=args.model_revision)
     tokenizer.pad_token = tokenizer.eos_token
     dtype = torch.float32 if args.dtype == "float32" else torch.bfloat16 if args.dtype == "bfloat16" else torch.float64
     
@@ -149,7 +149,7 @@ def main(args):
         project=args.wandb_project,
         config=vars(args), # Log all args
         entity=args.wandb_entity,
-        name=run_name
+        name=args.model_name.replace('/', '_') + "_" + run_name
     )
 
     results=[]
