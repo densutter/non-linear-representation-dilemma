@@ -1,12 +1,52 @@
-# Complexity vs. Accuracy  
-**On Mechanistic Interpretability's Dependence on the Linear Representation Hypothesis**
+# The Non-Linear Representation Dilemma: Is Causal Abstraction Enough for Mechanistic Interpretability?
 
-## Files
+Note that the distributed alignment search (DAS) implemented in this repository is a reimplementation of the DAS proposed in "Finding Alignments Between Interpretable Causal Variables and Distributed Neural Representations" (Geiger et al., 2024b). 
 
-The newest code I use can be found in DAS\_Experiment\_V5.6\_Cleanup. The Experiments are as following:
+The required libraries can be imported with:
+```
+pip install -r requirements.txt
+```
 
-+ DAS\_Own\_Code\_V5\_Standard\_DAS.ipynb: Runs the standard full DAS run on MLPs (with different transformation functions)
-+ DAS\_Own\_Code\_V5\_Training\_Progression.ipynb: Runs the DAS experiments at different MLP training stages (with different transformation functions)
-+ DAS\_Own\_Code\_V5\_Hidden\_Size\_Progression.ipynb: Runs the DAS experiments with different hidden layer size RevNets on MLPs
-+ DAS\_Own\_Code\_V5\_LLM\_Experiments.ipynb: Runs the standard full DAS run on LLMs (with different transformation functions)
+## Helper Code (In "das" folder)
+ 
++ DAS.py: Includes the code for the general DAS class facilitating the DAS experiments
++ DAS\_MLP.py: Includes specific code of the DAS class applied on a MLP.
++ DAS\_LLM.py:  @Julian: Includes specific code of the DAS class applied on a LLM.
++ Dataset\_Generation.py: Code used for generating the used datasets.
++ Helper\_Functions.py: General helper code
++ Classification\_Model.py: Includes the code for the MLP model used for the tasks Hierarchical Equality and Distributed Law Setting Experiments.
++ LLM\_Model.py: Code required to get the LLM model used for the Indirect Object Identification Task
++ Rotation\_Model.py: Rotation and its inverse
++ RevNet.py: RevNet and its inverse
++ \_\_init\_\_.py: @Julian
++ plotting.py: @Julian
+
+
+## Hierarchical Equality and Distributive Law Setting Experiments (In "notebooks repository" folder)
+
+The notebooks used for this settings are:
+
++ Standard\_DAS.ipynb: Notebook used to create the results applying the standard DAS approach as proposed in paper "Finding Alignments Between Interpretable Causal Variables and Distributed Neural Representations" (Geiger et al., 2024b)
++ Standard\_DAS\_DAS\_fitted.ipynb: Similar to "Standard\_DAS.ipynb" but MLP model is not only trained to predict the task output but is further biased to ether the And-Or-And or And-Or Algorithm in the Distributive Law Setting.
++ Hidden\_Size\_Progression.ipynb: Notebook used to create the results applying DAS using different RevNets with different sized hidden layer size.
++ Training\_Progression.ipynb: Notebook used to create the results of DAS along the training of the MLP
++ Standard\_DAS\_Neurons.ipynb: Notebook used to create the results when instead of applying DAS, using greedy search over the neurons for interventions.
+
+Note that to evaluate the different algorithms (with corresponding Tasks) and bijective function ϕ, the setting has to be manually changed in the notebook. Where and how is indicated with comments and can be easily be done.
+
+
+## Indirect Object Identification Experiments (In "run", "scripts" folders)
+
+@Julian
+
+
+## Plot Generation (In "notebooks repository")
+
++ mlp\_hidden\_size\_plots.ipynb: @Julian
++ mlp\_training\_progression\_plots.ipynb: @Julian
++ plot\_pythia410m.py: @Julian
++ plot\_pythia410m\_seeds.py: @Julian
++ plot\_pythiasizes.py: @Julian
+
+
 

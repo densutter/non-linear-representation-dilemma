@@ -4,12 +4,10 @@ import copy
 import torch.nn as nn
 import torch.optim as optim
 
-
 from .DAS import Distributed_Alignment_Search
 
 
 class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
-    
     
     def Prepare_Dataset(self,Raw_Dataset): 
         Clean_Dataset={}
@@ -48,7 +46,6 @@ class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
                 if not dim_found:
                     Clean_Dataset["intervention"][-1].append(False)
             
-
         sample_number=len(Clean_Dataset["label"])
         Clean_Dataset["base"]=torch.stack(Clean_Dataset["base"]).to(self.Device)
         Clean_Dataset["label"]=torch.stack(Clean_Dataset["label"]).to(self.Device)

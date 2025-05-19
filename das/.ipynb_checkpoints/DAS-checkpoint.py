@@ -6,6 +6,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import wandb
 
+
 class phi_class:
     def __init__(self, phi,phi_inv,criterion,optimizer,scheduler):
         self.phi=phi
@@ -13,6 +14,7 @@ class phi_class:
         self.criterion=criterion
         self.optimizer=optimizer
         self.scheduler=scheduler
+
 
 class Distributed_Alignment_Search:
 
