@@ -20,6 +20,7 @@ class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
 
         #Actually adapted to the dataset I am using. Needs to be changed later:
         for ac_DP_pos in range(len(Raw_Dataset)):
+            
             #base input
             ac_DP=Raw_Dataset[ac_DP_pos]
             Clean_Dataset["base"].append(ac_DP["base"])
@@ -78,7 +79,10 @@ class Distributed_Alignment_Search_MLP(Distributed_Alignment_Search):
                 return self.Transformation_Class.phi_inv(result_tensor)
         
         return layer.register_forward_hook(hook_fn)
+   
+    
     def process_Batch(self,mode,data,ac_batch,total_correct,total_samples): 
+        
         #Prepare Source Activations
         self.source_activations = torch.zeros(len(ac_batch), self.Hidden_Layer_Size).to(self.Device)
         

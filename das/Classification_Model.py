@@ -48,8 +48,8 @@ class MLPForClassification(nn.Module):
 
 
 def train_model(model,X_train,y_train,X_eval,y_eval,batch_size = 1024,epochs=3):
-    # Create DataLoader
     
+    # Create DataLoader
     train_dataset = TensorDataset(X_train, y_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     
@@ -72,10 +72,10 @@ def train_model(model,X_train,y_train,X_eval,y_eval,batch_size = 1024,epochs=3):
 
 
 def eval_test_model(model,X_data,y_data,batch_size = 1024,verbose=False):
-    #Testing:
+    
+    # Create DataLoader
     test_dataset = TensorDataset(X_data, y_data)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    
     
     model.eval()
     correct = 0
