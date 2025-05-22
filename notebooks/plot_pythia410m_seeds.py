@@ -88,7 +88,7 @@ def plot_grouped_bars_mean_std(
                                color=dot_color, s=dot_size, zorder=3, alpha=dot_alpha,
                                edgecolor='white', linewidth=0.5) # Use same color as the corresponding metric bar
 
-    ax.set_xlabel("Language Model Training Step")
+    ax.set_xlabel("DNN Training Step")
     ax.set_ylabel("Accuracy")
     ax.set_title(title)
     ax.set_xticks(index)
@@ -282,10 +282,10 @@ if __name__ == '__main__':
             processed_accuracy_df = accuracy_results_df_overall.reindex(
                 index=REVISION_TYPES, columns=sorted_seed_column_labels
             )
-            current_layer_data_sources['Model Accuracy'] = processed_accuracy_df
+            current_layer_data_sources['DNN'] = processed_accuracy_df
         else:
             print(f"Warning: No accuracy data available for plot of layer {layer_key}.")
-            current_layer_data_sources['Model Accuracy'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
+            current_layer_data_sources['DNN'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
 
         # 2. RevNet IIA Data
         revnet_df_layer = revnet_iia_dfs_by_layer.get(layer_key)
@@ -293,10 +293,10 @@ if __name__ == '__main__':
             processed_revnet_iia_df = revnet_df_layer.reindex(
                 index=REVISION_TYPES, columns=sorted_seed_column_labels
             )
-            current_layer_data_sources['8 RevNet Blocks IIA'] = processed_revnet_iia_df
+            current_layer_data_sources['non-linear'] = processed_revnet_iia_df
         else:
             print(f"Warning: No RevNet IIA data for layer {layer_key}.")
-            current_layer_data_sources['8 RevNet Blocks IIA'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
+            current_layer_data_sources['non-linear'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
 
         # 3. Rotation IIA Data
         rotation_df_layer = rotation_iia_dfs_by_layer.get(layer_key) 
@@ -304,18 +304,18 @@ if __name__ == '__main__':
             processed_rotation_iia_df = rotation_df_layer.reindex(
                 index=REVISION_TYPES, columns=sorted_seed_column_labels
             )
-            current_layer_data_sources['Rotation IIA'] = processed_rotation_iia_df
+            current_layer_data_sources['linear'] = processed_rotation_iia_df
         else:
             print(f"Warning: No Rotation IIA data for layer {layer_key} (using placeholder or actual).")
-            current_layer_data_sources['Rotation IIA'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
+            current_layer_data_sources['linear'] = pd.DataFrame(index=REVISION_TYPES, columns=sorted_seed_column_labels)
         
-        bar_group_labels = ['Model Accuracy', '8 RevNet Blocks IIA', 'Rotation IIA']
+        bar_group_labels = ['DNN', 'non-linear', 'linear']
 
         # Ensure the new plotting function is called here
         fig, ax = plot_grouped_bars_mean_std(
             current_layer_data_sources,
             REVISION_TYPES,
-            ["Step 0", "Step 143000 (Full)"],
+            ["Init.", "Full"],
             "",
             bar_labels=bar_group_labels,
         )

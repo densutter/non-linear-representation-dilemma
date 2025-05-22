@@ -1,4 +1,13 @@
 # %%
+try:
+    # Only attempt to use autoreload in an interactive environment
+    import IPython
+    if IPython.get_ipython() is not None:
+        IPython.get_ipython().run_line_magic('load_ext', 'autoreload')
+        IPython.get_ipython().run_line_magic('autoreload', '2')
+except (ImportError, AttributeError):
+    # Not running in IPython/Jupyter, continue without autoreload
+    pass
 import sys
 
 sys.path.append("..")
@@ -56,7 +65,7 @@ def load_and_process_results(base_dir):
         match = re.match(r"RevNetB(\d+)H\d+D\d+", model_key_original)
         if match:
             number_of_blocks = match.group(1)
-            model_key_to_use = f"$K={number_of_blocks}$"
+            model_key_to_use = f"$L_{{\\mathrm{{rn}}}}={number_of_blocks}$"
             if model_key_original != model_key_to_use:
                 print(
                     f"Dynamically renamed model '{model_key_original}' to '{model_key_to_use}' from file {filename}"
@@ -173,7 +182,7 @@ if __name__ == "__main__":
     filter_target_name = original_model_to_remove
     match_filter = re.match(r"RevNetB(\d+)H\d+D\d+", original_model_to_remove)
     if match_filter:
-        filter_target_name = f"$K={match_filter.group(1)}$"
+        filter_target_name = f"$L_{{\\mathrm{{rn}}}}={match_filter.group(1)}$"
         print(
             f"Filter target '{original_model_to_remove}' maps to potential renamed column '{filter_target_name}'."
         )
@@ -275,6 +284,10 @@ if __name__ == "__main__":
         # Sort columns using the custom sorting function
         sorted_columns = sorted(df.columns, key=custom_sort_key)
         df = df[sorted_columns]
+
+        # Rename "Rotation" to "Linear" in column names
+        if "Rotation" in df.columns:
+            df = df.rename(columns={"Rotation": "linear"})
         return df
         # Ren
 
@@ -334,8 +347,9 @@ if __name__ == "__main__":
         acc_marker_color="red",
         xtick_label_replace=replace_step_with_number,
         legend_font_size=18,
-        acc_marker_label="Model Acc.",
-        x_label="Model Training Step",
+        acc_marker_size=13,
+        acc_marker_label="DNN",
+        x_label="DNN Training Step",
         inject_color_at_start=(0, 204/255, 102/255),
         x_axis_label_pad=10,
         xlabel_fontsize=24,
@@ -343,8 +357,9 @@ if __name__ == "__main__":
         xtick_label_fontsize=24,
         ytick_label_fontsize=24,
         xtick_label_rotation=0,
-        figsize=(8, 5),
+        figsize=(8, 4.2),
         legend_background_alpha=0.9,
+        legend_label_spacing=0.2,
     )
 
     # Set LaTeX font for high-quality publication-ready plots
@@ -368,8 +383,10 @@ if __name__ == "__main__":
     plt.tight_layout()
     # Set fontsize for axis ticks
     PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+   
     plt.show()
     fig.savefig(PLOTS_DIR / f"pythia410m.pdf", dpi=300)
+
 
 
 # %%

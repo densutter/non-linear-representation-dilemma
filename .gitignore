@@ -1,4 +1,4 @@
-results/*
+results/**
 datasets/*
 playground.ipynb
 *.pyc
