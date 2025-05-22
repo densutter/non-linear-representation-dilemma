@@ -1,8 +1,7 @@
 import torch.nn as nn
 import torch
 
-# class RotateLayer is copied from the pyvene implementation of DAS. See:
-# https://stanfordnlp.github.io/pyvene/_modules/pyvene/models/layers.html#RotateLayer.__init__
+
 class RotateLayer(nn.Module):
     """A learnable linear transformation initialized as an orthogonal matrix."""
 

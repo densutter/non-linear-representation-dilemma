@@ -6,6 +6,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import wandb
 
+
 class phi_class:
     def __init__(self, phi,phi_inv,criterion,optimizer,scheduler):
         self.phi=phi
@@ -13,6 +14,7 @@ class phi_class:
         self.criterion=criterion
         self.optimizer=optimizer
         self.scheduler=scheduler
+
 
 class Distributed_Alignment_Search:
 
@@ -121,7 +123,8 @@ class Distributed_Alignment_Search:
                    TrainModel=False,
                    verbose=False,
                    val_every_n_steps=None,
-                   lr_warmup_steps=0): # 1=train, 2=test, 3=eval
+                   lr_warmup_steps=0,
+                   report_loss=False): # 1=train, 2=test, 3=eval
 
         # --- Initial State Setup based on mode and TrainModel ---
         initial_model_train_state = self.Model.training # Store original state to restore at the end
@@ -175,6 +178,8 @@ class Distributed_Alignment_Search:
             target_lr = self.Transformation_Class.optimizer.param_groups[0]['lr']
 
         # --- Epoch Loop ---
+        total_Loss2=0
+        total_Loss_step2=0
         for epoch in range(epochs):
             total_correct = 0 # Correct count for the *training* epoch/batch
             total_samples = 0 # Sample count for the *training* epoch/batch
@@ -190,6 +195,7 @@ class Distributed_Alignment_Search:
                 iterator = tqdm(iterator)
 
             # --- Batch Loop ---
+            
             for ac_batch in iterator:
                 step += 1
 
@@ -263,9 +269,11 @@ class Distributed_Alignment_Search:
                             break # Exit batch loop
 
                 elif mode == 2: # Testing Step
-                     _, batch_correct, batch_samples, _ = self.process_Batch(mode, data, ac_batch, 0, 0)
+                     loss, batch_correct, batch_samples, _ = self.process_Batch(mode, data, ac_batch, 0, 0)
                      total_correct += batch_correct
                      total_samples += batch_samples
+                     total_Loss2+=loss
+                     total_Loss_step2+=1
                      if verbose and hasattr(iterator, 'set_description'):
                          accuracy = total_correct / total_samples if total_samples > 0 else 0
                          iterator.set_description(f"Test Accuracy: {accuracy:.4f}")
@@ -363,7 +371,10 @@ class Distributed_Alignment_Search:
 
             accuracy = total_correct / total_samples if total_samples > 0 else 0
             wandb.log({"test/accuracy": accuracy}) 
-            return accuracy
+            if report_loss:
+                return accuracy,total_Loss2/total_Loss_step2
+            else:
+                return accuracy
                 
 
     def chunk_list(self, input_list, batch_size):
