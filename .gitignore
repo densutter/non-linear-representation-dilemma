@@ -1,5 +1,8 @@
 results/**
 datasets/*
+Archive/**
+notebooks/plots/**
+Results_Cleaned/**
 playground.ipynb
 *.pyc
 **/wandb/**
