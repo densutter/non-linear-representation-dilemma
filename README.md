@@ -9,7 +9,8 @@ pip install -r requirements.txt
 
 To reproduce our experiments, you must first generate the results for the [Hierarchical Equality and Distributive Law Setting Experiments](#hierarchical-equality-and-distributive-law-setting-experiments) and [Indirect Object Identification Experiments](#indirect-object-identification-experiments-in-run-scripts-folders), then run the plotting functions ([Plot Generation](#plot-generation))
 
-## Reproducing Results
+## Reproducing Results
+
 ### Hierarchical Equality and Distributive Law Setting Experiments 
 The notebooks (in ``notebook`` folder) used for this settings are:
 
