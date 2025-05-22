@@ -104,7 +104,7 @@ Results_Cleaned/
 
 
 ### Indirect Object Identification Experiments 
-The main training code for DAS on the Pythia suite is implemented in [`scripts/das_llm.py`](scripts/das_llm.py). To reproduce our Pythia experiments, we provide several bash scripts in the `run` folder:
+The main training code for DAS on the Pythia suite is implemented in [`scripts/das_llm.py`](scripts/das_llm.py). To reproduce our Pythia experiments, we provide several bash scripts in the `run` folder. The training will automatically log to [wandb.ai](https://wandb.ai/) under the ``CausalAbstractionLLM`` project. You can change the entity, project or runname by adding arguments. Run `python scripts/das_llm.py --help` for details.
 
 For training progression experiments on Pythia-410M, run:
 ```bash

@@ -78,7 +78,7 @@ def parse_args():
 
     # Wandb Config
     parser.add_argument('--wandb_project', type=str, default="CausalAbstractionLLM", help="Wandb project name.")
-    parser.add_argument('--wandb_entity', type=str, default="jkminder", help="Wandb entity (username or team name).")
+    parser.add_argument('--wandb_entity', type=str, default = None, help="Wandb entity (username or team name).")
     parser.add_argument('--run_name', type=str, default="", help="Prefix for the wandb run name.")
     parser.add_argument('--lr_warmup_steps', type=int, default=0, help="Number of linear learning rate warmup steps.")
     return parser.parse_args()
