@@ -6,7 +6,6 @@ import torch.optim as optim
 from tqdm import tqdm
 import wandb
 
-
 class phi_class:
     def __init__(self, phi,phi_inv,criterion,optimizer,scheduler):
         self.phi=phi
@@ -14,7 +13,6 @@ class phi_class:
         self.criterion=criterion
         self.optimizer=optimizer
         self.scheduler=scheduler
-
 
 class Distributed_Alignment_Search:
 
@@ -329,6 +327,7 @@ class Distributed_Alignment_Search:
                 
                 print(f"Epoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}, ",
                       f"Steps w/o Improvement: {steps_without_improvement}, ",
+                      f"Train Accuracy: {total_correct/total_samples}, ",
                       f"Eval Loss (End of Epoch): {final_eval_loss_report:.4f}" if val_every_n_steps is None else f"Best Eval Loss So Far: {best_loss_corr:.4f}",
                       f", LR for next epoch (base): {effective_lr_after_scheduler_step}", flush=True)
 

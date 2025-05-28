@@ -312,6 +312,110 @@ def Generate_LLM_Eval_Intervention_Data(filename,tokenizer,LLM_test_samples,Inte
     return LLM_test_data,DAS_Train_o,DAS_Eval_o,DAS_Test_o
 
 
+def Makedataset(baba_templates,abba_templates,Names_Split,Places,Objects,size):
+    dataset=[]
+    for _ in range(size):
+        A=random.choice(Names_Split)
+        B=random.choice(Names_Split)
+        while A==B:
+            B=random.choice(Names_Split)
+        PLACE=random.choice(Places)
+        OBJECT=random.choice(Objects)
+        if random.choice([True,False]):
+            text=random.choice(baba_templates)
+        else:
+            text=random.choice(abba_templates)
+        text=text.replace("{A}", A)
+        text=text.replace("{B}", B)
+        text=text.replace("{OBJECT}", OBJECT)
+        text=text.replace("{PLACE}", PLACE)
+        dataset.append(text)
+    ret={}
+    ret["ioi_sentences"]=dataset
+    return ret
+    
+
+def Generate_LLM_Eval_Intervention_Data_NameSplit(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size,randomsamples=200000):
+    data=pd.read_parquet(filename, engine='pyarrow')
+    baba_templates = [
+        "Then, {B} and {A} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {B} and {A} had a lot of fun at the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {B} and {A} were working at the {PLACE}. {B} decided to give a {OBJECT} to {A}",
+        "Then, {B} and {A} were thinking about going to the {PLACE}. {B} wanted to give a {OBJECT} to {A}",
+        "Then, {B} and {A} had a long argument, and afterwards {B} said to {A}",
+        "After {B} and {A} went to the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "When {B} and {A} got a {OBJECT} at the {PLACE}, {B} decided to give it to {A}",
+        "When {B} and {A} got a {OBJECT} at the {PLACE}, {B} decided to give the {OBJECT} to {A}",
+        "While {B} and {A} were working at the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "While {B} and {A} were commuting to the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "After the lunch, {B} and {A} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Afterwards, {B} and {A} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {B} and {A} had a long argument. Afterwards {B} said to {A}",
+        "The {PLACE} {B} and {A} went to had a {OBJECT}. {B} gave it to {A}",
+        "Friends {B} and {A} found a {OBJECT} at the {PLACE}. {B} gave it to {A}",
+    ]
+    abba_templates = [
+        "Then, {A} and {B} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {A} and {B} had a lot of fun at the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {A} and {B} were working at the {PLACE}. {B} decided to give a {OBJECT} to {A}",
+        "Then, {A} and {B} were thinking about going to the {PLACE}. {B} wanted to give a {OBJECT} to {A}",
+        "Then, {A} and {B} had a long argument, and afterwards {B} said to {A}",
+        "After {A} and {B} went to the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "When {A} and {B} got a {OBJECT} at the {PLACE}, {B} decided to give it to {A}",
+        "When {A} and {B} got a {OBJECT} at the {PLACE}, {B} decided to give the {OBJECT} to {A}",
+        "While {A} and {B} were working at the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "While {A} and {B} were commuting to the {PLACE}, {B} gave a {OBJECT} to {A}",
+        "After the lunch, {A} and {B} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Afterwards, {A} and {B} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
+        "Then, {A} and {B} had a long argument. Afterwards {B} said to {A}",
+        "The {PLACE} {A} and {B} went to had a {OBJECT}. {B} gave it to {A}",
+        "Friends {A} and {B} found a {OBJECT} at the {PLACE}. {B} gave it to {A}",
+    ]
+    
+    Names   = ['Faye', 'Yolanda', 'Fannie', 'Mildred', 'Doris', 'Melissa', 'Shannon', 'Natasha', 'Nellie', 'Stacey', 'Sonia', 'Kelly', 'Marsha', 'Inez', 'Jacqueline', 'Violet', 'Miriam', 'Jerry', 'Brian', 'Stella', 'Rachel', 'Pauline', 'Yvette', 'Rebecca', 'Marilyn', 'Diana', 'Chelsea', 'Kathryn', 'Lula', 'Anne', 'Bernadette', 'Loretta', 'Kevin', 'David', 'Alyssa', 'Gwen', 'Amanda', 'Charlene', 'Irma', 'Megan', 'Stacy', 'Virginia', 'Rosemarie', 'Jessica', 'Paula', 'Richard', 'Jackie', 'Teresa', 'Leona', 'Carol', 'Juana', 'Kristi', 'Evelyn', 'Brandy', 'William', 'Deanna', 'Sarah', 'Eleanor', 'Maggie', 'Harriet', 'Kari', 'Rosa', 'Angie', 'Kristina', 'Melanie', 'Mark', 'Martha', 'Lorraine', 'Agnes', 'Janet', 'Geneva', 'Robin', 'Ella', 'Heidi', 'Suzanne', 'Wilma', 'Velma', 'Pat', 'Estelle', 'Erika', 'Alice', 'Sophia', 'Anita', 'Alicia', 'Carmen', 'Lee', 'Grace', 'Susan', 'Sheila', 'Leigh', 'Mona', 'Kim', 'Jody', 'Mattie', 'Ginger', 'Ethel', 'Theresa', 'Dianne', 'Marian', 'Jessie']
+    Places  = ['store', 'theater', 'museum', 'shop', 'beach', 'school', 'mountain', 'desert', 'river', 'cafe', 'library', 'cave', 'forest', 'market', 'zoo', 'park', 'home', 'lake', 'bar', 'gym']
+    Objects = ['apple', 'raspberry', 'orange', 'grape', 'blueberry', 'coconut', 'banana', 'plum', 'kiwi', 'papaya', 'cherry', 'pear', 'blackberry', 'pineapple', 'honeydew', 'cantaloupe', 'watermelon', 'mango', 'peach', 'strawberry']
+    
+    
+    lenght_train=int(randomsamples/10*8)
+    lenght_eval=int(randomsamples/10*1)
+    lenght_test=int(randomsamples/10*1)
+    
+    split_Names_p1=round(len(Names)/10*6)
+    split_Names_p2=round(len(Names)/10*8)
+    
+    preprocessed_train_names=Names[:split_Names_p1]
+    preprocessed_eval_names=Names[split_Names_p1:split_Names_p2]
+    preprocessed_test_names=Names[split_Names_p2:]
+    
+    preprocessed_train=Makedataset(baba_templates,abba_templates,preprocessed_train_names,Places,Objects,lenght_train)
+    preprocessed_eval=Makedataset(baba_templates,abba_templates,preprocessed_eval_names,Places,Objects,lenght_eval)
+    preprocessed_test=Makedataset(baba_templates,abba_templates,preprocessed_test_names,Places,Objects,lenght_test)
+    
+    preprocessed_train=Preprocess_IOI_Data(preprocessed_train,tokenizer)
+    preprocessed_eval=Preprocess_IOI_Data(preprocessed_eval,tokenizer)
+    preprocessed_test=Preprocess_IOI_Data(preprocessed_test,tokenizer)
+    print(preprocessed_train,preprocessed_eval,preprocessed_test)
+    
+    LLM_test_data=[[],[]]
+    for dp in tqdm(random.sample(preprocessed_test,LLM_test_samples)):
+        LLM_test_data[0].append(tokenizer(dp[0], return_tensors="pt"))
+        if dp[1]:
+            LLM_test_data[1].append(torch.stack([
+                tokenizer(dp[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(dp[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
+            ]))
+        else:
+            LLM_test_data[1].append(torch.stack([
+                tokenizer(dp[3], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0],
+                tokenizer(dp[2], return_tensors="pt", add_special_tokens=False)["input_ids"][0][0]
+            ]))
+    
+    DAS_Train_o=make_intervention_dataset_LLM(preprocessed_train,Intervention_train_size,tokenizer)
+    DAS_Eval_o=make_intervention_dataset_LLM(preprocessed_eval,Intervention_eval_size,tokenizer)
+    DAS_Test_o=make_intervention_dataset_LLM(preprocessed_test,Intervention_test_size,tokenizer)
+
+    return LLM_test_data,DAS_Train_o,DAS_Eval_o,DAS_Test_o
 
 ###############################
 ##                           ##
