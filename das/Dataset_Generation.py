@@ -335,8 +335,7 @@ def Makedataset(baba_templates,abba_templates,Names_Split,Places,Objects,size):
     return ret
     
 
-def Generate_LLM_Eval_Intervention_Data_NameSplit(filename,tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size,randomsamples=200000):
-    data=pd.read_parquet(filename, engine='pyarrow')
+def Generate_LLM_Eval_Intervention_Data_NameSplit(tokenizer,LLM_test_samples,Intervention_train_size,Intervention_eval_size,Intervention_test_size,randomsamples=200000):
     baba_templates = [
         "Then, {B} and {A} went to the {PLACE}. {B} gave a {OBJECT} to {A}",
         "Then, {B} and {A} had a lot of fun at the {PLACE}. {B} gave a {OBJECT} to {A}",
@@ -397,7 +396,7 @@ def Generate_LLM_Eval_Intervention_Data_NameSplit(filename,tokenizer,LLM_test_sa
     preprocessed_test=Preprocess_IOI_Data(preprocessed_test,tokenizer)
     
     LLM_test_data=[[],[]]
-    for dp in tqdm(random.sample(preprocessed_test,LLM_test_samples)):
+    for dp in tqdm(random.sample(preprocessed_test,min(LLM_test_samples,len(preprocessed_test)))):
         LLM_test_data[0].append(tokenizer(dp[0], return_tensors="pt"))
         if dp[1]:
             LLM_test_data[1].append(torch.stack([
