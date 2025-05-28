@@ -395,7 +395,6 @@ def Generate_LLM_Eval_Intervention_Data_NameSplit(filename,tokenizer,LLM_test_sa
     preprocessed_train=Preprocess_IOI_Data(preprocessed_train,tokenizer)
     preprocessed_eval=Preprocess_IOI_Data(preprocessed_eval,tokenizer)
     preprocessed_test=Preprocess_IOI_Data(preprocessed_test,tokenizer)
-    print(preprocessed_train,preprocessed_eval,preprocessed_test)
     
     LLM_test_data=[[],[]]
     for dp in tqdm(random.sample(preprocessed_test,LLM_test_samples)):
