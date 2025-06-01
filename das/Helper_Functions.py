@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import torch
+import os
 
 def set_seed(seed):
     # Set the seed for the random module
@@ -25,5 +26,16 @@ def set_seed(seed):
     torch.random.manual_seed(seed)
 
 
+def ensure_directory_for_file(file_path):
+    """
+    Ensures that the directory for the given file path exists.
+    Creates the directory if it doesn't exist.
+    
+    Args:
+        file_path (str): Path to the file for which directories should be ensured.
+    """
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
