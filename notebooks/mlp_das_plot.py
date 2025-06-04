@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from pathlib import Path
 
-RESULTS_DIR = Path("../Results_Cleaned/Standard_DAS")
+RESULTS_DIR = Path("../Results/Standard_DAS")
 
 def calculate_mean_std(dict_list, greedy=False):
     print(greedy)

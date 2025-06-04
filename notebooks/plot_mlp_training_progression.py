@@ -25,7 +25,7 @@ import matplotlib.image as mpimg
 from matplotlib.offsetbox import HPacker, TextArea, OffsetImage, AnchoredOffsetbox
 
 
-RESULTS_DIR = Path("../Results_Cleaned")
+RESULTS_DIR = Path("../Results")
 PLOTS_DIR = Path("plots/mlp")
 
 

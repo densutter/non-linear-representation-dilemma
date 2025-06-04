@@ -27,7 +27,7 @@ from matplotlib.offsetbox import HPacker, TextArea, OffsetImage, AnchoredOffsetb
 # Added imports for custom legend handler
 from matplotlib.legend_handler import HandlerBase
 
-RESULTS_DIR = Path("../Results_Cleaned")
+RESULTS_DIR = Path("../Results")
 PLOTS_DIR = Path("plots/mlp")
 IMAGE_LEGEND_PATH = Path("intervensionsize_label_small.png")
 

@@ -69,6 +69,13 @@ python3 Hidden_Size_Progression.py cpu "AndOr" 0 "./Results/HiddenSizeProgressio
 python3 Standard_DAS_Injectivity.py cpu "./Results/Injectivity_Surjectivity_Experiments/results.json"
 
 
+#Standard_DAS_Neurons_fitted
+python3 Standard_DAS_Neurons_fitted.py cpu "AndOrAnd" "AndOrAnd" "./Results/Standard_DAS/Greedy_Neuronset/AndOrAndFix/AndOrAnd/results.json"
+python3 Standard_DAS_Neurons_fitted.py cpu "AndOrAnd" "AndOr" "./Results/Standard_DAS/Greedy_Neuronset/AndOrFix/AndOrAnd/results.json"
+python3 Standard_DAS_Neurons_fitted.py cpu "AndOr" "AndOrAnd" "./Results/Standard_DAS/Greedy_Neuronset/AndOrAndFix/AndOr/results.json"
+python3 Standard_DAS_Neurons_fitted.py cpu "AndOr" "AndOr" "./Results/Standard_DAS/Greedy_Neuronset/AndOrFix/AndOr/results.json"
+
+
 #Standard_DAS_DAS_fitted
 python3 Standard_DAS_DAS_fitted.py cpu "AndOrAnd" "AndOrAnd" "Rotation" "./Results/Standard_DAS/Rotation/AndOrAndFix/AndOrAnd/results.json"
 python3 Standard_DAS_DAS_fitted.py cpu "AndOrAnd" "AndOr" "Rotation" "./Results/Standard_DAS/Rotation/AndOrFix/AndOrAnd/results.json"
