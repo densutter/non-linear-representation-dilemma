@@ -48,10 +48,10 @@ def calculate_mean_std(dict_list, greedy=False):
     return recursive_stats([], dict_list, greedy)
 
 
-def load_file(intervention, algorithm, greedy=False):
+def load_file(intervention, algorithm, training_name, greedy=False):
     print(intervention, algorithm, greedy)
     with open(
-        RESULTS_DIR / intervention / "FullyTrained" / algorithm / "results.json"
+        RESULTS_DIR / intervention / training_name / algorithm / "results.json"
     ) as f:
         return calculate_mean_std(json.load(f), greedy)
 
@@ -63,12 +63,13 @@ def load(
         "Left_Equality_Relation",
         "Identity_of_First_Argument",
     ],
+    training_name="FullyTrained",
 ):
     results = {}
     for intervention in interventions:
         results[intervention] = {}
         for algorithm in algorithms:
-            results[intervention][algorithm] = load_file(intervention, algorithm, greedy="greedy"in intervention.lower())
+            results[intervention][algorithm] = load_file(intervention, algorithm, training_name, greedy="greedy"in intervention.lower())
     return results
 
 
@@ -100,7 +101,8 @@ def plot_data(
     legend_fontsize=24,
     legend_title_fontsize=24,
     legend_loc="upper right",
-    task_name="Hierarchical Equality"
+    task_name="Hierarchical Equality",
+    training_name="FullyTrained"
 ):
     # LaTeX font rendering and global font size settings
     plt.rcParams.update(
@@ -449,7 +451,7 @@ def plot_data(
     fig.tight_layout() # Adjust subplot params for a tight layout
 
     
-    output_filename = f"plots/{task_name}_combined.pdf" # Single filename for the combined plot
+    output_filename = f"plots/{task_name}_{training_name}_combined.pdf" # Single filename for the combined plot
     try:
         plt.savefig(output_filename, dpi=300)
         print(f"Plot saved as {output_filename}")
@@ -471,6 +473,13 @@ plot_data(results, task_name="hierarchical_equality") # Single call to the revis
 algorithms = ["AndOr", "AndOrAnd"]
 results = load(algorithms=algorithms)
 # %%
+
 plot_data(results, ordered_algorithms=algorithms, legend_loc="lower right", task_name="distributed_law") # Single call to the revised function
+
+results = load(algorithms=algorithms,training_name="AndOrAndFix")
+plot_data(results, ordered_algorithms=algorithms, legend_loc="lower right", task_name="distributed_law", training_name="AndOrAndFix")
+
+results = load(algorithms=algorithms,training_name="AndOrFix")
+plot_data(results, ordered_algorithms=algorithms, legend_loc="lower right", task_name="distributed_law", training_name="AndOrFix")
 
 # %%
