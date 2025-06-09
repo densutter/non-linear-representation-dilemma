@@ -53,7 +53,7 @@ FitModelTo = sys.argv[3]
 #FitModelTo = "AndOrAnd"
 #FitModelTo = "AndOr"
 hid_size=16
-if Setting=="AndOrAnd" or "AndOr":
+if Setting=="AndOrAnd" or Setting=="AndOr":
     hid_size=24
 
 
