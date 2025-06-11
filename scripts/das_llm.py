@@ -19,7 +19,7 @@ import argparse # Import argparse
 
 print("Current working directory:", os.getcwd())
 from das.Helper_Functions import set_seed
-from das.Dataset_Generation import Generate_LLM_Eval_Intervention_Data
+from das.Dataset_Generation import Generate_LLM_Eval_Intervention_Data, Generate_LLM_Eval_Intervention_Data_NameSplit
 from das.LLM_Model import (make_model,
                        LLM_Criterion_targetCE,
                        LLM_Criterion_Diff,
@@ -42,7 +42,7 @@ def parse_args():
                         help="Model initialization mode: 0:pretrained, 1:fully randomized, 2:only randomize llm head, 3: only randomize embedding, 4: randomize linked embedding and lm head.")
     parser.add_argument('--device', type=str, default="cuda:0", help="Device to run the model on ('cuda:0', 'cpu', etc.).")
     parser.add_argument('--dtype', type=str, default="bfloat16", choices=["float32", "float64", "bfloat16"], help="Data type for the model.")
-
+    parser.add_argument('--name-split', action="store_true", help="Use name split dataset.")
     # Transformation Config
     parser.add_argument('--transformation_type', type=str, default="RevNet", choices=["RevNet", "Rotation"], help="Type of transformation function.")
     parser.add_argument('--in_features', type=int, default=2048, help="Input features for the transformation function (hidden layer size).")
@@ -78,7 +78,7 @@ def parse_args():
 
     # Wandb Config
     parser.add_argument('--wandb_project', type=str, default="CausalAbstractionLLM", help="Wandb project name.")
-    parser.add_argument('--wandb_entity', type=str, default = None, help="Wandb entity (username or team name).")
+    parser.add_argument('--wandb_entity', type=str, default = "jkminder", help="Wandb entity (username or team name).")
     parser.add_argument('--run_name', type=str, default="", help="Prefix for the wandb run name.")
     parser.add_argument('--lr_warmup_steps', type=int, default=0, help="Number of linear learning rate warmup steps.")
     return parser.parse_args()
@@ -105,40 +105,50 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, revision=args.model_revision)
     tokenizer.pad_token = tokenizer.eos_token
     dtype = torch.float32 if args.dtype == "float32" else torch.bfloat16 if args.dtype == "bfloat16" else torch.float64
+    ds_name = "default"
+    if args.name_split:
+        ds_name = "name_split"
     
-    print(f"Loading datasets from {args.model_name.replace('/', '_')}")
-    if os.path.exists(f"datasets/{args.model_name.replace('/', '_')}"):
-        LLM_test_data = torch.load(f"datasets/{args.model_name.replace('/', '_')}/LLM_test_data.pt")[:args.llm_test_samples]
-        DAS_Train = torch.load(f"datasets/{args.model_name.replace('/', '_')}/DAS_Train.pt")[:args.intervention_train_size]
-        DAS_Eval = torch.load(f"datasets/{args.model_name.replace('/', '_')}/DAS_Eval.pt")[:args.intervention_eval_size]
-        DAS_Test = torch.load(f"datasets/{args.model_name.replace('/', '_')}/DAS_Test.pt")[:args.intervention_test_size]
+    print(f"Loading datasets from {args.model_name.replace('/', '_')}/{ds_name}")
+    if os.path.exists(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}"):
+        LLM_test_data = torch.load(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/LLM_test_data.pt", weights_only=False)[:args.llm_test_samples]
+        DAS_Train = torch.load(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Train.pt", weights_only=False)[:args.intervention_train_size]
+        DAS_Eval = torch.load(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Eval.pt", weights_only=False)[:args.intervention_eval_size]
+        DAS_Test = torch.load(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Test.pt", weights_only=False)[:args.intervention_test_size]
     else:
         print("Generating datasets...")
-        print(f"Loading '{args.dataset_repo_id}' file '{args.dataset_filename}'...")
         # Seed dataset generation separately if needed, or rely on global seed
         set_seed(0) # Keep original seeding for dataset generation? Or use args.seed? Using 0 for now as in original.
-        dataset_path = hf_hub_download(
-            repo_id=args.dataset_repo_id,
-            filename=args.dataset_filename,
-            repo_type="dataset"
-        )
-        LLM_test_data,DAS_Train,DAS_Eval,DAS_Test=Generate_LLM_Eval_Intervention_Data(filename=dataset_path,
+        if args.name_split:
+            LLM_test_data,DAS_Train,DAS_Eval,DAS_Test=Generate_LLM_Eval_Intervention_Data_NameSplit(
                                                                                     tokenizer=tokenizer,
                                                                                     LLM_test_samples=args.llm_test_samples,
                                                                                     Intervention_train_size=args.intervention_train_size,
                                                                                     Intervention_eval_size=args.intervention_eval_size,
                                                                                     Intervention_test_size=args.intervention_test_size)
-        
-        os.makedirs(f"datasets/{args.model_name.replace('/', '_')}")
-        torch.save(LLM_test_data, f"datasets/{args.model_name.replace('/', '_')}/LLM_test_data.pt")
-        torch.save(DAS_Train, f"datasets/{args.model_name.replace('/', '_')}/DAS_Train.pt")
-        torch.save(DAS_Eval, f"datasets/{args.model_name.replace('/', '_')}/DAS_Eval.pt")
-        torch.save(DAS_Test, f"datasets/{args.model_name.replace('/', '_')}/DAS_Test.pt")
+        else:
+            print(f"Loading '{args.dataset_repo_id}' file '{args.dataset_filename}'...")
+            dataset_path = hf_hub_download(
+                repo_id=args.dataset_repo_id,
+                filename=args.dataset_filename,
+                repo_type="dataset"
+            )
+            LLM_test_data,DAS_Train,DAS_Eval,DAS_Test=Generate_LLM_Eval_Intervention_Data(filename=dataset_path,
+                                                                                    tokenizer=tokenizer,
+                                                                                    LLM_test_samples=args.llm_test_samples,
+                                                                                    Intervention_train_size=args.intervention_train_size,
+                                                                                    Intervention_eval_size=args.intervention_eval_size,
+                                                                                    Intervention_test_size=args.intervention_test_size)
+        os.makedirs(f"datasets/{args.model_name.replace('/', '_')}/{ds_name}")
+        torch.save(LLM_test_data, f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/LLM_test_data.pt")
+        torch.save(DAS_Train, f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Train.pt")
+        torch.save(DAS_Eval, f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Eval.pt")
+        torch.save(DAS_Test, f"datasets/{args.model_name.replace('/', '_')}/{ds_name}/DAS_Test.pt")
 
     transformation_name = ""
     if args.transformation_type == "RevNet":
         transformation_name = f"B{args.revnet_blocks}H{args.revnet_hidden_size}D{args.revnet_depth}"
-    run_name = f"{args.run_name}{args.model_revision}_m{model_config['Trained']}_l{args.layer_index}_{transformation_config['type']}{transformation_name}_{args.dtype}_lr{args.lr:.1e}"
+    run_name = f"{args.run_name}{args.model_revision}_{ds_name}_m{model_config['Trained']}_l{args.layer_index}_{transformation_config['type']}{transformation_name}_{args.dtype}_lr{args.lr:.1e}"
     assert not (args.diff_loss and args.target_ce_loss), "Cannot use both difference and target CE loss"
     if args.diff_loss:
         run_name += "_diff"
@@ -149,7 +159,7 @@ def main(args):
         project=args.wandb_project,
         config=vars(args), # Log all args
         entity=args.wandb_entity,
-        name=args.model_name.replace('/', '_') + "_" + run_name
+        name=run_name
     )
 
     results=[]
@@ -247,7 +257,23 @@ def main(args):
             results_filename = f"{args.results_path}/{run_name}_results.json"
             with open(results_filename, 'w') as f:
                 json.dump(results, f, indent=4)
+
             print(f"Results saved to {results_filename}")
+
+            # Save phi checkpoint
+            checkpoint_dir = f"{args.results_path}/checkpoints"
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            checkpoint_filename = f"{checkpoint_dir}/{run_name}_phi.pt"
+            torch.save({
+                'model_state_dict': phi.phi.state_dict(),
+                'optimizer_state_dict': phi.optimizer.state_dict(),
+                'scheduler_state_dict': phi.scheduler.state_dict(),
+                'args': args,
+                'layer': LayerName,
+                'inter_dim': inter_dim
+            }, checkpoint_filename)
+
+            print(f"Phi checkpoint saved to {checkpoint_filename}")
             # Optionally, log results file to wandb
             wandb.save(results_filename)
 
