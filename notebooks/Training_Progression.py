@@ -58,7 +58,7 @@ Setting  = sys.argv[2]
 #Setting = "AndOrAnd"
 #Setting = "AndOr"
 hid_size=16
-if Setting=="AndOrAnd" or "AndOr":
+if Setting=="AndOrAnd" or Setting=="AndOr":
     hid_size=24
 
 if sys.argv[3]=="Rotation":
