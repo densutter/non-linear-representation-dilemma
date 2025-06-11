@@ -159,7 +159,7 @@ def main(args):
         project=args.wandb_project,
         config=vars(args), # Log all args
         entity=args.wandb_entity,
-        name=run_name
+        name=args.model_name.replace('/', '_') + "_" + run_name
     )
 
     results=[]

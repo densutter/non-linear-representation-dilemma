@@ -501,7 +501,7 @@ layers_label=["Layer 3","Layer 2","Layer 1"]
 intervention_label=["Intervention Size 1","Intervention Size 2","Intervention Size 8"]
 model_names=["linear","$L_{{\\mathrm{{rn}}}}=1,d_\\mathrm{rn}=2^4$","$L_{{\\mathrm{{rn}}}}=5,d_\\mathrm{rn}=2^4$","$L_{{\\mathrm{{rn}}}}=10,d_\\mathrm{rn}=2^4$","$L_{{\\mathrm{{rn}}}}=10,d_\\mathrm{rn}=2^7$"]
 
-def generate_plots(algorithm_name, intervention_sizes=intervention_sizes_double_intervention):
+def generate_plots(algorithm_name, intervention_sizes=intervention_sizes_double_intervention, model_names=model_names):
     PLOTS_DIR.mkdir(parents=True, exist_ok=True) # Ensure directory exists
     results, accuracy_data = prepare_data(algorithm_name
 ,layers_label,intervention_sizes,intervention_label)
@@ -552,11 +552,12 @@ intervention_sizes =   ['[[0], [1]]',
                         '[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]]'
                         ]
 intervention_label=["Intervention Size 1","Intervention Size 2","Intervention Size 12"]
+model_names=["linear","$L_{{\\mathrm{{rn}}}}=1,d_\\mathrm{rn}=24$","$L_{{\\mathrm{{rn}}}}=5,d_\\mathrm{rn}=24$","$L_{{\\mathrm{{rn}}}}=10,d_\\mathrm{rn}=24$","$L_{{\\mathrm{{rn}}}}=10,d_\\mathrm{rn}=2^7$"]
 
 
 # %%
-generate_plots("AndOr", intervention_sizes=intervention_sizes)
+generate_plots("AndOr", intervention_sizes=intervention_sizes, model_names=model_names)
 
 # %%
-generate_plots("AndOrAnd", intervention_sizes=intervention_sizes)
+generate_plots("AndOrAnd", intervention_sizes=intervention_sizes, model_names=model_names)
 # %%
